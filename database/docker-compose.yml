@@ -1,0 +1,16 @@
+﻿services:
+  postgres:
+    image: postgres:16
+    container_name: allepanel_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: allepanel
+      POSTGRES_PASSWORD: allepanel123
+      POSTGRES_DB: allepanel
+    ports:
+      - "5432:5432"
+    volumes:
+      - allepanel_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  allepanel_postgres_data:
