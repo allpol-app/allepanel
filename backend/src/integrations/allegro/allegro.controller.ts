@@ -301,6 +301,39 @@ async getAllegroShipmentLabel(
   return res.send(label.buffer);
 }
 
+@UseGuards(AuthGuard)
+@Get('accounts')
+async getAllegroAccounts(@Req() req: Request) {
+  const user = (req as any).user;
+
+  const accounts = await this.prisma.marketplaceAccount.findMany({
+    where: {
+      userId: user.id,
+      marketplace: Marketplace.ALLEGRO,
+      deletedAt: null,
+    },
+    orderBy: {
+      id: 'desc',
+    },
+    select: {
+      id: true,
+      marketplace: true,
+      status: true,
+      accountName: true,
+      externalAccountId: true,
+      tokenExpiresAt: true,
+      errorMessage: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return {
+    ok: true,
+    accounts,
+  };
+}
+
 
 
 

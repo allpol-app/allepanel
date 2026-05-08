@@ -6,6 +6,7 @@ type OrderListKey =
   | 'dpd'
   | 'ups'
   | 'dhl'
+  | 'sent'
   | 'unpaid'
   | 'cancelled'
   | 'other';
@@ -20,18 +21,18 @@ type GetOrdersQuery = {
 };
 
 const ACTIVE_ORDER_STATUS = 'READY_FOR_PROCESSING';
-
-const ACTIVE_FULFILLMENT_STATUSES = [
-  'NEW',
-  'PROCESSING',
+const ACTIVE_FULFILLMENT_STATUSES = ['NEW', 'PROCESSING'];
+const UNPAID_ORDER_STATUSES = ['BOUGHT'];
+const SHIPPED_FULFILLMENT_STATUSES = [
   'READY_FOR_SHIPMENT',
+  'SENT',
+  'PICKED_UP',
+  'READY_FOR_PICKUP',
 ];
-
-const UNPAID_ORDER_STATUSES = ['BOUGHT', 'FILLED_IN'];
-
+const CANCELLED_ORDER_STATUSES = ['CANCELLED', 'BUYER_CANCELLED', 'AUTO_CANCELLED'];
 const CARRIER_KEYS = ['inpost', 'dpd', 'ups', 'dhl'] as const;
 
-@Injectable()   
+@Injectable()
 export class OrdersService {
   constructor(private readonly prisma: PrismaService) {}
 
@@ -46,12 +47,8 @@ export class OrdersService {
       this.prisma.order.findMany({
         where,
         orderBy: [
-          {
-            orderCreatedAt: 'desc',
-          },
-          {
-            id: 'desc',
-          },
+          { orderCreatedAt: 'desc' },
+          { id: 'desc' },
         ],
         skip,
         take: limit,
@@ -65,15 +62,26 @@ export class OrdersService {
             },
           },
           items: {
-            orderBy: {
-              id: 'asc',
+            orderBy: { id: 'asc' },
+          },
+          shipments: {
+            where: { deletedAt: null },
+            orderBy: { id: 'desc' },
+            select: {
+              id: true,
+              provider: true,
+              status: true,
+              externalShipmentId: true,
+              externalCommandId: true,
+              trackingNumber: true,
+              labelFormat: true,
+              createdAt: true,
+              updatedAt: true,
             },
           },
         },
       }),
-      this.prisma.order.count({
-        where,
-      }),
+      this.prisma.order.count({ where }),
     ]);
 
     return {
@@ -109,8 +117,22 @@ export class OrdersService {
           },
         },
         items: {
-          orderBy: {
-            id: 'asc',
+          orderBy: { id: 'asc' },
+        },
+        shipments: {
+          where: { deletedAt: null },
+          orderBy: { id: 'desc' },
+          select: {
+            id: true,
+            provider: true,
+            status: true,
+            externalShipmentId: true,
+            externalCommandId: true,
+            trackingNumber: true,
+            labelFormat: true,
+            errorMessage: true,
+            createdAt: true,
+            updatedAt: true,
           },
         },
       },
@@ -134,6 +156,7 @@ export class OrdersService {
       dpd: [],
       ups: [],
       dhl: [],
+      sent: [],
       unpaid: [],
       cancelled: [],
       other: [],
@@ -144,6 +167,7 @@ export class OrdersService {
       dpd: 0,
       ups: 0,
       dhl: 0,
+      sent: 0,
       unpaid: 0,
       cancelled: 0,
       other: 0,
@@ -159,12 +183,8 @@ export class OrdersService {
         this.prisma.order.findMany({
           where,
           orderBy: [
-            {
-              orderCreatedAt: 'desc',
-            },
-            {
-              id: 'desc',
-            },
+            { orderCreatedAt: 'desc' },
+            { id: 'desc' },
           ],
           take: limit,
           include: {
@@ -177,15 +197,26 @@ export class OrdersService {
               },
             },
             items: {
-              orderBy: {
-                id: 'asc',
+              orderBy: { id: 'asc' },
+            },
+            shipments: {
+              where: { deletedAt: null },
+              orderBy: { id: 'desc' },
+              select: {
+                id: true,
+                provider: true,
+                status: true,
+                externalShipmentId: true,
+                externalCommandId: true,
+                trackingNumber: true,
+                labelFormat: true,
+                createdAt: true,
+                updatedAt: true,
               },
             },
           },
         }),
-        this.prisma.order.count({
-          where,
-        }),
+        this.prisma.order.count({ where }),
       ]);
 
       lists[listKey] = orders.map((order) => ({
@@ -196,10 +227,7 @@ export class OrdersService {
       summary[listKey] = count;
     }
 
-    return {
-      summary,
-      lists,
-    };
+    return { summary, lists };
   }
 
   private buildWhere(userId: number, query: GetOrdersQuery) {
@@ -233,42 +261,12 @@ export class OrdersService {
 
       if (search.length > 0) {
         where.OR = [
-          {
-            externalOrderId: {
-              contains: search,
-              mode: 'insensitive',
-            },
-          },
-          {
-            buyerLogin: {
-              contains: search,
-              mode: 'insensitive',
-            },
-          },
-          {
-            buyerEmail: {
-              contains: search,
-              mode: 'insensitive',
-            },
-          },
-          {
-            buyerFirstName: {
-              contains: search,
-              mode: 'insensitive',
-            },
-          },
-          {
-            buyerLastName: {
-              contains: search,
-              mode: 'insensitive',
-            },
-          },
-          {
-            deliveryMethodName: {
-              contains: search,
-              mode: 'insensitive',
-            },
-          },
+          { externalOrderId: { contains: search, mode: 'insensitive' } },
+          { buyerLogin: { contains: search, mode: 'insensitive' } },
+          { buyerEmail: { contains: search, mode: 'insensitive' } },
+          { buyerFirstName: { contains: search, mode: 'insensitive' } },
+          { buyerLastName: { contains: search, mode: 'insensitive' } },
+          { deliveryMethodName: { contains: search, mode: 'insensitive' } },
         ];
       }
     }
@@ -282,6 +280,7 @@ export class OrdersService {
           'dpd',
           'ups',
           'dhl',
+          'sent',
           'unpaid',
           'cancelled',
           'other',
@@ -291,7 +290,6 @@ export class OrdersService {
       }
 
       const listWhere = this.buildListWhere(list as OrderListKey);
-
       where.AND = [...(where.AND ?? []), listWhere];
     }
 
@@ -299,74 +297,79 @@ export class OrdersService {
   }
 
   private buildListWhere(list: OrderListKey) {
-  if (list === 'unpaid') {
-    return {
-      externalOrderStatus: {
-        in: UNPAID_ORDER_STATUSES,
+    if (list === 'unpaid') {
+      return {
+        externalOrderStatus: {
+          in: UNPAID_ORDER_STATUSES,
+        },
+      };
+    }
+
+    if (list === 'sent') {
+      return {
+        externalFulfillmentStatus: {
+          in: SHIPPED_FULFILLMENT_STATUSES,
+        },
+      };
+    }
+
+    if (list === 'cancelled') {
+      return {
+        OR: [
+          {
+            externalOrderStatus: {
+              in: CANCELLED_ORDER_STATUSES,
+            },
+          },
+          {
+            externalFulfillmentStatus: {
+              contains: 'CANCELLED',
+              mode: 'insensitive',
+            },
+          },
+        ],
+      };
+    }
+
+    const activeBaseWhere = {
+      externalOrderStatus: ACTIVE_ORDER_STATUS,
+      externalFulfillmentStatus: {
+        in: ACTIVE_FULFILLMENT_STATUSES,
       },
     };
-  }
 
-  if (list === 'cancelled') {
-    return {
-      OR: [
-        {
-          externalOrderStatus: {
-            contains: 'CANCELLED',
-            mode: 'insensitive',
+    if (list === 'other') {
+      return {
+        AND: [
+          activeBaseWhere,
+          {
+            OR: [
+              { deliveryMethodName: null },
+              {
+                NOT: CARRIER_KEYS.map((carrier) => ({
+                  deliveryMethodName: {
+                    contains: carrier,
+                    mode: 'insensitive',
+                  },
+                })),
+              },
+            ],
           },
-        },
-        {
-          externalFulfillmentStatus: {
-            contains: 'CANCELLED',
-            mode: 'insensitive',
-          },
-        },
-      ],
-    };
-  }
+        ],
+      };
+    }
 
-  const activeBaseWhere = {
-    externalOrderStatus: ACTIVE_ORDER_STATUS,
-    externalFulfillmentStatus: {
-      in: ACTIVE_FULFILLMENT_STATUSES,
-    },
-  };
-
-  if (list === 'other') {
     return {
       AND: [
         activeBaseWhere,
         {
-          OR: [
-            {
-              deliveryMethodName: null,
-            },
-            {
-              NOT: CARRIER_KEYS.map((carrier) => ({
-                deliveryMethodName: {
-                  contains: carrier,
-                  mode: 'insensitive',
-                },
-              })),
-            },
-          ],
+          deliveryMethodName: {
+            contains: list,
+            mode: 'insensitive',
+          },
         },
       ],
     };
-  }
-
-  return {
-    AND: [
-      activeBaseWhere,
-      {
-        deliveryMethodName: {
-          contains: list,
-          mode: 'insensitive',
-        },
-      },
-    ],
-  };
   }
 
   private detectCarrier(deliveryMethodName?: string | null) {
@@ -376,21 +379,18 @@ export class OrdersService {
 
     const name = deliveryMethodName.toLowerCase();
 
-    if (name.includes('inpost')) {
+    if (
+      name.includes('inpost') ||
+      name.includes('paczkomat') ||
+      name.includes('paczko') ||
+      name.includes('one box')
+    ) {
       return 'inpost';
     }
 
-    if (name.includes('dpd')) {
-      return 'dpd';
-    }
-
-    if (name.includes('ups')) {
-      return 'ups';
-    }
-
-    if (name.includes('dhl')) {
-      return 'dhl';
-    }
+    if (name.includes('dpd')) return 'dpd';
+    if (name.includes('ups')) return 'ups';
+    if (name.includes('dhl')) return 'dhl';
 
     return 'other';
   }

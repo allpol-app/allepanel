@@ -120,18 +120,25 @@ type SyncOrdersResult = {
 
 
 
-//tylko nowe
-const ACTIVE_SYNC_FULFILLMENT_STATUSES = [
-  'NEW',
-  'PROCESSING',
+// Pobieramy jako nowe / aktywne tylko opłacone zamówienia gotowe do obsługi.
+// Nie pobieramy READY_FOR_SHIPMENT / SENT / PICKED_UP / READY_FOR_PICKUP jako nowych.
+const ACTIVE_SYNC_FULFILLMENT_STATUSES = ['NEW', 'PROCESSING'];
+
+// Zamówienia nieopłacone pobieramy tylko jako BOUGHT.
+// FILLED_IN pomijamy, bo Allegro może zwrócić wiele wersji FOD przed zakończeniem płatności.
+const UNPAID_SYNC_ORDER_STATUSES = ['BOUGHT'];
+
+const SHIPPED_FULFILLMENT_STATUSES = [
   'READY_FOR_SHIPMENT',
+  'SENT',
+  'PICKED_UP',
+  'READY_FOR_PICKUP',
 ];
 
-const LOCAL_STATUSES_TO_REFRESH = [
-  'NEW',
-  'PROCESSING',
-  'READY_FOR_SHIPMENT',
-  'READY_FOR_PICKUP',
+const CANCELLED_EXTERNAL_ORDER_STATUSES = [
+  'CANCELLED',
+  'BUYER_CANCELLED',
+  'AUTO_CANCELLED',
 ];
 
 @Injectable()
@@ -148,61 +155,94 @@ export class AllegroOrdersService {
    * Pobiera zamówienia z Allegro dla jednego konta marketplace.
    * Jeszcze nic nie zapisuje do PostgreSQL.
    */
+  
   async fetchOrdersForAccount(
-  userId: number,
-  marketplaceAccountId: number,
-): Promise<AllegroCheckoutFormsResponse> {
-  const accessToken = await this.getValidAccessTokenForAccount(
-    userId,
-    marketplaceAccountId,
-  );
+    userId: number,
+    marketplaceAccountId: number,
+  ): Promise<AllegroCheckoutFormsResponse> {
+    const accessToken = await this.getValidAccessTokenForAccount(
+      userId,
+      marketplaceAccountId,
+    );
 
-  const limit = 100;
-  let offset = 0;
-
-  const allCheckoutForms: AllegroCheckoutForm[] = [];
-  let totalCount = 0;
-
-  while (true) {
-    const params = new URLSearchParams();
-
-    params.append('limit', String(limit));
-    params.append('offset', String(offset));
-
-    for (const status of ACTIVE_SYNC_FULFILLMENT_STATUSES) {
-      params.append('fulfillment.status', status);
-    }
-
-    const response = await axios.get<AllegroCheckoutFormsResponse>(
-      `${this.allegroApiBaseUrl}/order/checkout-forms?${params.toString()}`,
+    const readyForProcessing = await this.fetchCheckoutFormsByFilters(
+      accessToken,
       {
-        headers: this.getAllegroHeaders(accessToken),
+        status: ['READY_FOR_PROCESSING'],
+        fulfillmentStatus: ACTIVE_SYNC_FULFILLMENT_STATUSES,
       },
     );
 
-    const checkoutForms = response.data.checkoutForms ?? [];
+    const unpaid = await this.fetchCheckoutFormsByFilters(accessToken, {
+      status: UNPAID_SYNC_ORDER_STATUSES,
+      fulfillmentStatus: [],
+    });
 
-    allCheckoutForms.push(...checkoutForms);
+    const byId = new Map<string, AllegroCheckoutForm>();
 
-    totalCount = response.data.totalCount ?? allCheckoutForms.length;
-
-    if (checkoutForms.length < limit) {
-      break;
+    for (const order of [...readyForProcessing.checkoutForms, ...unpaid.checkoutForms]) {
+      byId.set(order.id, order);
     }
 
-    offset += limit;
+    const checkoutForms = Array.from(byId.values());
 
-    if (offset >= totalCount) {
-      break;
-    }
+    return {
+      checkoutForms,
+      count: checkoutForms.length,
+      totalCount: checkoutForms.length,
+    };
   }
 
-  return {
-    checkoutForms: allCheckoutForms,
-    count: allCheckoutForms.length,
-    totalCount,
-  };
-}
+  private async fetchCheckoutFormsByFilters(
+    accessToken: string,
+    filters: {
+      status: string[];
+      fulfillmentStatus: string[];
+    },
+  ): Promise<{ checkoutForms: AllegroCheckoutForm[]; totalCount: number }> {
+    const limit = 100;
+    let offset = 0;
+    let totalCount = 0;
+    const allCheckoutForms: AllegroCheckoutForm[] = [];
+
+    while (true) {
+      const params = new URLSearchParams();
+
+      params.append('limit', String(limit));
+      params.append('offset', String(offset));
+
+      for (const status of filters.status) {
+        params.append('status', status);
+      }
+
+      for (const status of filters.fulfillmentStatus) {
+        params.append('fulfillment.status', status);
+      }
+
+      const response = await axios.get<AllegroCheckoutFormsResponse>(
+        `${this.allegroApiBaseUrl}/order/checkout-forms?${params.toString()}`,
+        {
+          headers: this.getAllegroHeaders(accessToken),
+        },
+      );
+
+      const checkoutForms = response.data.checkoutForms ?? [];
+      allCheckoutForms.push(...checkoutForms);
+
+      totalCount = response.data.totalCount ?? allCheckoutForms.length;
+
+      if (checkoutForms.length < limit) break;
+
+      offset += limit;
+
+      if (offset >= totalCount) break;
+    }
+
+    return {
+      checkoutForms: allCheckoutForms,
+      totalCount,
+    };
+  }
 
   /**
    * TEST 2:
@@ -626,105 +666,104 @@ export class AllegroOrdersService {
   }
   
   private async refreshPreviouslyActiveOrders(
-  userId: number,
-  marketplaceAccountId: number,
-  activeExternalOrderIds: Set<string>,
-  accessToken: string,
-) {
-  const where: any = {
-    userId,
-    marketplaceAccountId,
-    marketplace: Marketplace.ALLEGRO,
-    deletedAt: null,
-    externalFulfillmentStatus: {
-      in: LOCAL_STATUSES_TO_REFRESH,
-    },
-  };
-
-  if (activeExternalOrderIds.size > 0) {
-    where.externalOrderId = {
-      notIn: Array.from(activeExternalOrderIds),
+    userId: number,
+    marketplaceAccountId: number,
+    activeExternalOrderIds: Set<string>,
+    accessToken: string,
+  ) {
+    const where: any = {
+      userId,
+      marketplaceAccountId,
+      marketplace: Marketplace.ALLEGRO,
+      deletedAt: null,
     };
-  }
 
-  const localOrdersToRefresh = await this.prisma.order.findMany({
-    where,
-    select: {
-      id: true,
-      externalOrderId: true,
-      externalOrderStatus: true,
-      externalFulfillmentStatus: true,
-    },
-  });
-
-  let checked = 0;
-  let updated = 0;
-  let movedToArchive = 0;
-
-  for (const localOrder of localOrdersToRefresh) {
-    checked++;
-
-    const freshOrder = await this.fetchSingleOrderByExternalOrderId(
-      accessToken,
-      localOrder.externalOrderId,
-    );
-
-    if (!freshOrder) {
-      continue;
+    if (activeExternalOrderIds.size > 0) {
+      where.externalOrderId = {
+        notIn: Array.from(activeExternalOrderIds),
+      };
     }
 
-    const freshExternalOrderStatus = freshOrder.status ?? null;
-    const freshFulfillmentStatus = freshOrder.fulfillment?.status ?? null;
-
-    const statusChanged =
-      freshExternalOrderStatus !== localOrder.externalOrderStatus ||
-      freshFulfillmentStatus !== localOrder.externalFulfillmentStatus;
-
-    if (!statusChanged) {
-      continue;
-    }
-
-    const isNowArchived =
-      freshFulfillmentStatus === 'SENT' ||
-      freshFulfillmentStatus === 'PICKED_UP' ||
-      freshFulfillmentStatus === 'READY_FOR_PICKUP' ||
-      freshFulfillmentStatus === 'CANCELLED' ||
-      freshExternalOrderStatus === 'CANCELLED' ||
-      freshExternalOrderStatus === 'BUYER_CANCELLED';
-
-    if (isNowArchived) {
-      movedToArchive++;
-    }
-
-    await this.prisma.order.update({
-      where: {
-        id: localOrder.id,
-      },
-      data: {
-        status: this.mapToLocalOrderStatus(
-          freshExternalOrderStatus,
-          freshFulfillmentStatus,
-        ),
-        externalOrderStatus: freshExternalOrderStatus,
-        externalFulfillmentStatus: freshFulfillmentStatus,
-        externalLineItemsSentStatus:
-          freshOrder.fulfillment?.shipmentSummary?.lineItemsSent ?? null,
-        externalUpdatedAt: this.toDateOrNull(freshOrder.updatedAt),
-        externalRevision: freshOrder.revision ?? null,
-        marketplaceSiteId: freshOrder.marketplace?.id ?? null,
-        syncedAt: new Date(),
-        rawData: freshOrder as object,
+    const localOrdersToRefresh = await this.prisma.order.findMany({
+      where,
+      select: {
+        id: true,
+        externalOrderId: true,
+        externalOrderStatus: true,
+        externalFulfillmentStatus: true,
       },
     });
 
-    updated++;
-  }
+    let checked = 0;
+    let updated = 0;
+    let movedToArchive = 0;
+    let movedToSent = 0;
+    let movedToCancelled = 0;
 
-  return {
-    checked,
-    updated,
-    movedToArchive,
-  };
+    for (const localOrder of localOrdersToRefresh) {
+      checked++;
+
+      const freshOrder = await this.fetchSingleOrderByExternalOrderId(
+        accessToken,
+        localOrder.externalOrderId,
+      );
+
+      if (!freshOrder) {
+        continue;
+      }
+
+      const freshExternalOrderStatus = freshOrder.status ?? null;
+      const freshFulfillmentStatus = freshOrder.fulfillment?.status ?? null;
+
+      const statusChanged =
+        freshExternalOrderStatus !== localOrder.externalOrderStatus ||
+        freshFulfillmentStatus !== localOrder.externalFulfillmentStatus;
+
+      if (!statusChanged) {
+        continue;
+      }
+
+      if (this.isShippedFulfillmentStatus(freshFulfillmentStatus)) {
+        movedToSent++;
+        movedToArchive++;
+      }
+
+      if (this.isCancelledExternalOrderStatus(freshExternalOrderStatus)) {
+        movedToCancelled++;
+        movedToArchive++;
+      }
+
+      await this.prisma.order.update({
+        where: {
+          id: localOrder.id,
+        },
+        data: {
+          status: this.mapToLocalOrderStatus(
+            freshExternalOrderStatus,
+            freshFulfillmentStatus,
+          ),
+          externalOrderStatus: freshExternalOrderStatus,
+          externalFulfillmentStatus: freshFulfillmentStatus,
+          externalLineItemsSentStatus:
+            freshOrder.fulfillment?.shipmentSummary?.lineItemsSent ?? null,
+          externalUpdatedAt: this.toDateOrNull(freshOrder.updatedAt),
+          externalRevision: freshOrder.revision ?? null,
+          marketplaceSiteId: freshOrder.marketplace?.id ?? null,
+          syncedAt: new Date(),
+          rawData: freshOrder as object,
+        },
+      });
+
+      updated++;
+    }
+
+    return {
+      checked,
+      updated,
+      movedToArchive,
+      movedToSent,
+      movedToCancelled,
+    };
   }
 
   private async fetchImagesForOrders(
@@ -847,27 +886,30 @@ export class AllegroOrdersService {
     return numberValue.toFixed(2);
   }
 
+  private isShippedFulfillmentStatus(status?: string | null) {
+    return SHIPPED_FULFILLMENT_STATUSES.includes(String(status || ''));
+  }
+
+  private isCancelledExternalOrderStatus(status?: string | null) {
+    return CANCELLED_EXTERNAL_ORDER_STATUSES.includes(String(status || ''));
+  }
+
   private mapToLocalOrderStatus(
     externalOrderStatus?: string | null,
     externalFulfillmentStatus?: string | null,
   ): OrderStatus {
     if (
-      externalOrderStatus === 'CANCELLED' ||
-      externalOrderStatus === 'BUYER_CANCELLED' ||
-      externalFulfillmentStatus === 'CANCELLED'
+      this.isCancelledExternalOrderStatus(externalOrderStatus) ||
+      String(externalFulfillmentStatus || '').includes('CANCELLED')
     ) {
       return OrderStatus.CANCELLED;
     }
 
-    if (externalFulfillmentStatus === 'SENT') {
+    if (this.isShippedFulfillmentStatus(externalFulfillmentStatus)) {
       return OrderStatus.SENT;
     }
 
-    if (
-      externalFulfillmentStatus === 'PROCESSING' ||
-      externalFulfillmentStatus === 'READY_FOR_SHIPMENT' ||
-      externalFulfillmentStatus === 'READY_FOR_PICKUP'
-    ) {
+    if (externalFulfillmentStatus === 'PROCESSING') {
       return OrderStatus.PROCESSING;
     }
 

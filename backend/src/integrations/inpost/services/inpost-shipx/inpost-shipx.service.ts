@@ -10,6 +10,11 @@ type InpostOrganizationResponse = {
   [key: string]: unknown;
 };
 
+type LabelRequestSettings = {
+  queryFormat: 'pdf' | 'zpl' | 'epl';
+  accept: string;
+};
+
 @Injectable()
 export class InpostShipxService {
   private readonly shipxBaseUrl = 'https://api-shipx-pl.easypack24.net';
@@ -64,7 +69,7 @@ export class InpostShipxService {
     organizationId: string,
     apiToken: string,
     externalShipmentId: string,
-    format = 'pdf',
+    format = 'pdf-a6',
   ): Promise<Buffer> {
     if (!organizationId) {
       throw new Error('Brak organizationId.');
@@ -78,20 +83,50 @@ export class InpostShipxService {
       throw new Error('Brak externalShipmentId.');
     }
 
-    const normalizedFormat = String(format || 'pdf').toLowerCase();
+    const labelSettings = this.getLabelRequestSettings(format);
 
     const response = await axios.get(
-      `${this.shipxBaseUrl}/v1/organizations/${organizationId}/shipments/${externalShipmentId}/label`,
+      `${this.shipxBaseUrl}/v1/shipments/${externalShipmentId}/label?format=${labelSettings.queryFormat}`,
       {
         headers: {
           ...this.getShipxHeaders(apiToken),
-          Accept: `application/${normalizedFormat}`,
+          Accept: labelSettings.accept,
         },
         responseType: 'arraybuffer',
       },
     );
 
     return Buffer.from(response.data);
+  }
+
+  private getLabelRequestSettings(format: string): LabelRequestSettings {
+    const normalized = String(format || 'pdf-a6').toLowerCase().trim();
+
+    if (normalized === 'zpl') {
+      return {
+        queryFormat: 'zpl',
+        accept: 'text/zpl;dpi=203',
+      };
+    }
+
+    if (normalized === 'epl' || normalized === 'epl2') {
+      return {
+        queryFormat: 'epl',
+        accept: 'text/epl2;dpi=203',
+      };
+    }
+
+    if (normalized === 'pdf-a4' || normalized === 'a4') {
+      return {
+        queryFormat: 'pdf',
+        accept: 'application/pdf;format=A4',
+      };
+    }
+
+    return {
+      queryFormat: 'pdf',
+      accept: 'application/pdf;format=A6',
+    };
   }
 
   private getShipxHeaders(apiToken: string) {

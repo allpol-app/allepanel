@@ -5,6 +5,7 @@ import {
   Controller,
   Post,
   Req,
+  Get,
   UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
@@ -64,6 +65,7 @@ export class InpostController {
       },
     };
   }
+  
 
   @Post('shipx/connect')
   async connectShipxAccount(
@@ -157,5 +159,38 @@ export class InpostController {
         updatedAt: savedAccount.updatedAt,
       },
     };
+  }
+
+  @Get('shipx/accounts')
+async getShipxAccounts(@Req() req: Request) {
+  const user = (req as any).user;
+
+  const accounts = await this.prisma.shippingAccount.findMany({
+    where: {
+      userId: user.id,
+      provider: ShippingProvider.INPOST_SHIPX,
+      deletedAt: null,
+    },
+    orderBy: {
+      id: 'desc',
+    },
+    select: {
+      id: true,
+      provider: true,
+      accountName: true,
+      organizationId: true,
+      organizationName: true,
+      organizationEmail: true,
+      status: true,
+      errorMessage: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return {
+    ok: true,
+    accounts,
+  };
   }
 }

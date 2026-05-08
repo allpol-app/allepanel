@@ -61,6 +61,15 @@ model User {
   taxId       String?
   phone       String?
 
+  // Domyślna drukarka etykiet użytkownika
+  // Nazwa musi odpowiadać nazwie drukarki widocznej w systemie / QZ Tray,
+  // np. "ZDesigner GC420d" albo "Zebra GC420d".
+  labelPrinterName     String?
+  labelPrinterFormat   String? @default("zpl")
+  labelPrinterDpi      Int?    @default(203)
+  labelPrinterWidthMm  Int?    @default(100)
+  labelPrinterHeightMm Int?    @default(150)
+
   // Jeden user może mieć wiele kont marketplace
   marketplaceAccounts MarketplaceAccount[]
 
@@ -123,6 +132,8 @@ model MarketplaceAccount {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
+
+  
 
   @@index([userId])
   @@index([userId, marketplace])

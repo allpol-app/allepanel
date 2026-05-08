@@ -158,6 +158,11 @@ export class AuthService {
     companyName: string | null;
     taxId: string | null;
     phone: string | null;
+    labelPrinterName: string | null;
+    labelPrinterFormat: string | null;
+    labelPrinterDpi: number | null;
+    labelPrinterWidthMm: number | null;
+    labelPrinterHeightMm: number | null;
     createdAt: Date;
     updatedAt: Date;
   }) {
@@ -169,6 +174,11 @@ export class AuthService {
       companyName: user.companyName,
       taxId: user.taxId,
       phone: user.phone,
+      labelPrinterName: user.labelPrinterName,
+      labelPrinterFormat: user.labelPrinterFormat || 'zpl',
+      labelPrinterDpi: user.labelPrinterDpi || 203,
+      labelPrinterWidthMm: user.labelPrinterWidthMm || 100,
+      labelPrinterHeightMm: user.labelPrinterHeightMm || 150,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

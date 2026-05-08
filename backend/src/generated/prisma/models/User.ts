@@ -28,10 +28,16 @@ export type AggregateUser = {
 
 export type UserAvgAggregateOutputType = {
   id: number | null
+  labelPrinterDpi: number | null
+  labelPrinterWidthMm: number | null
+  labelPrinterHeightMm: number | null
 }
 
 export type UserSumAggregateOutputType = {
   id: number | null
+  labelPrinterDpi: number | null
+  labelPrinterWidthMm: number | null
+  labelPrinterHeightMm: number | null
 }
 
 export type UserMinAggregateOutputType = {
@@ -43,6 +49,11 @@ export type UserMinAggregateOutputType = {
   companyName: string | null
   taxId: string | null
   phone: string | null
+  labelPrinterName: string | null
+  labelPrinterFormat: string | null
+  labelPrinterDpi: number | null
+  labelPrinterWidthMm: number | null
+  labelPrinterHeightMm: number | null
   createdAt: Date | null
   updatedAt: Date | null
   deletedAt: Date | null
@@ -57,6 +68,11 @@ export type UserMaxAggregateOutputType = {
   companyName: string | null
   taxId: string | null
   phone: string | null
+  labelPrinterName: string | null
+  labelPrinterFormat: string | null
+  labelPrinterDpi: number | null
+  labelPrinterWidthMm: number | null
+  labelPrinterHeightMm: number | null
   createdAt: Date | null
   updatedAt: Date | null
   deletedAt: Date | null
@@ -71,6 +87,11 @@ export type UserCountAggregateOutputType = {
   companyName: number
   taxId: number
   phone: number
+  labelPrinterName: number
+  labelPrinterFormat: number
+  labelPrinterDpi: number
+  labelPrinterWidthMm: number
+  labelPrinterHeightMm: number
   createdAt: number
   updatedAt: number
   deletedAt: number
@@ -80,10 +101,16 @@ export type UserCountAggregateOutputType = {
 
 export type UserAvgAggregateInputType = {
   id?: true
+  labelPrinterDpi?: true
+  labelPrinterWidthMm?: true
+  labelPrinterHeightMm?: true
 }
 
 export type UserSumAggregateInputType = {
   id?: true
+  labelPrinterDpi?: true
+  labelPrinterWidthMm?: true
+  labelPrinterHeightMm?: true
 }
 
 export type UserMinAggregateInputType = {
@@ -95,6 +122,11 @@ export type UserMinAggregateInputType = {
   companyName?: true
   taxId?: true
   phone?: true
+  labelPrinterName?: true
+  labelPrinterFormat?: true
+  labelPrinterDpi?: true
+  labelPrinterWidthMm?: true
+  labelPrinterHeightMm?: true
   createdAt?: true
   updatedAt?: true
   deletedAt?: true
@@ -109,6 +141,11 @@ export type UserMaxAggregateInputType = {
   companyName?: true
   taxId?: true
   phone?: true
+  labelPrinterName?: true
+  labelPrinterFormat?: true
+  labelPrinterDpi?: true
+  labelPrinterWidthMm?: true
+  labelPrinterHeightMm?: true
   createdAt?: true
   updatedAt?: true
   deletedAt?: true
@@ -123,6 +160,11 @@ export type UserCountAggregateInputType = {
   companyName?: true
   taxId?: true
   phone?: true
+  labelPrinterName?: true
+  labelPrinterFormat?: true
+  labelPrinterDpi?: true
+  labelPrinterWidthMm?: true
+  labelPrinterHeightMm?: true
   createdAt?: true
   updatedAt?: true
   deletedAt?: true
@@ -224,6 +266,11 @@ export type UserGroupByOutputType = {
   companyName: string | null
   taxId: string | null
   phone: string | null
+  labelPrinterName: string | null
+  labelPrinterFormat: string | null
+  labelPrinterDpi: number | null
+  labelPrinterWidthMm: number | null
+  labelPrinterHeightMm: number | null
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null
@@ -261,6 +308,11 @@ export type UserWhereInput = {
   companyName?: Prisma.StringNullableFilter<"User"> | string | null
   taxId?: Prisma.StringNullableFilter<"User"> | string | null
   phone?: Prisma.StringNullableFilter<"User"> | string | null
+  labelPrinterName?: Prisma.StringNullableFilter<"User"> | string | null
+  labelPrinterFormat?: Prisma.StringNullableFilter<"User"> | string | null
+  labelPrinterDpi?: Prisma.IntNullableFilter<"User"> | number | null
+  labelPrinterWidthMm?: Prisma.IntNullableFilter<"User"> | number | null
+  labelPrinterHeightMm?: Prisma.IntNullableFilter<"User"> | number | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   deletedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
@@ -281,6 +333,11 @@ export type UserOrderByWithRelationInput = {
   companyName?: Prisma.SortOrderInput | Prisma.SortOrder
   taxId?: Prisma.SortOrderInput | Prisma.SortOrder
   phone?: Prisma.SortOrderInput | Prisma.SortOrder
+  labelPrinterName?: Prisma.SortOrderInput | Prisma.SortOrder
+  labelPrinterFormat?: Prisma.SortOrderInput | Prisma.SortOrder
+  labelPrinterDpi?: Prisma.SortOrderInput | Prisma.SortOrder
+  labelPrinterWidthMm?: Prisma.SortOrderInput | Prisma.SortOrder
+  labelPrinterHeightMm?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -304,6 +361,11 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   companyName?: Prisma.StringNullableFilter<"User"> | string | null
   taxId?: Prisma.StringNullableFilter<"User"> | string | null
   phone?: Prisma.StringNullableFilter<"User"> | string | null
+  labelPrinterName?: Prisma.StringNullableFilter<"User"> | string | null
+  labelPrinterFormat?: Prisma.StringNullableFilter<"User"> | string | null
+  labelPrinterDpi?: Prisma.IntNullableFilter<"User"> | number | null
+  labelPrinterWidthMm?: Prisma.IntNullableFilter<"User"> | number | null
+  labelPrinterHeightMm?: Prisma.IntNullableFilter<"User"> | number | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   deletedAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
@@ -324,6 +386,11 @@ export type UserOrderByWithAggregationInput = {
   companyName?: Prisma.SortOrderInput | Prisma.SortOrder
   taxId?: Prisma.SortOrderInput | Prisma.SortOrder
   phone?: Prisma.SortOrderInput | Prisma.SortOrder
+  labelPrinterName?: Prisma.SortOrderInput | Prisma.SortOrder
+  labelPrinterFormat?: Prisma.SortOrderInput | Prisma.SortOrder
+  labelPrinterDpi?: Prisma.SortOrderInput | Prisma.SortOrder
+  labelPrinterWidthMm?: Prisma.SortOrderInput | Prisma.SortOrder
+  labelPrinterHeightMm?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -346,6 +413,11 @@ export type UserScalarWhereWithAggregatesInput = {
   companyName?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   taxId?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   phone?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  labelPrinterName?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  labelPrinterFormat?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  labelPrinterDpi?: Prisma.IntNullableWithAggregatesFilter<"User"> | number | null
+  labelPrinterWidthMm?: Prisma.IntNullableWithAggregatesFilter<"User"> | number | null
+  labelPrinterHeightMm?: Prisma.IntNullableWithAggregatesFilter<"User"> | number | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
   deletedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
@@ -359,6 +431,11 @@ export type UserCreateInput = {
   companyName?: string | null
   taxId?: string | null
   phone?: string | null
+  labelPrinterName?: string | null
+  labelPrinterFormat?: string | null
+  labelPrinterDpi?: number | null
+  labelPrinterWidthMm?: number | null
+  labelPrinterHeightMm?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -379,6 +456,11 @@ export type UserUncheckedCreateInput = {
   companyName?: string | null
   taxId?: string | null
   phone?: string | null
+  labelPrinterName?: string | null
+  labelPrinterFormat?: string | null
+  labelPrinterDpi?: number | null
+  labelPrinterWidthMm?: number | null
+  labelPrinterHeightMm?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -398,6 +480,11 @@ export type UserUpdateInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterFormat?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterDpi?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterWidthMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterHeightMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -418,6 +505,11 @@ export type UserUncheckedUpdateInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterFormat?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterDpi?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterWidthMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterHeightMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -438,6 +530,11 @@ export type UserCreateManyInput = {
   companyName?: string | null
   taxId?: string | null
   phone?: string | null
+  labelPrinterName?: string | null
+  labelPrinterFormat?: string | null
+  labelPrinterDpi?: number | null
+  labelPrinterWidthMm?: number | null
+  labelPrinterHeightMm?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -451,6 +548,11 @@ export type UserUpdateManyMutationInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterFormat?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterDpi?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterWidthMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterHeightMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -465,6 +567,11 @@ export type UserUncheckedUpdateManyInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterFormat?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterDpi?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterWidthMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterHeightMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -479,6 +586,11 @@ export type UserCountOrderByAggregateInput = {
   companyName?: Prisma.SortOrder
   taxId?: Prisma.SortOrder
   phone?: Prisma.SortOrder
+  labelPrinterName?: Prisma.SortOrder
+  labelPrinterFormat?: Prisma.SortOrder
+  labelPrinterDpi?: Prisma.SortOrder
+  labelPrinterWidthMm?: Prisma.SortOrder
+  labelPrinterHeightMm?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
@@ -486,6 +598,9 @@ export type UserCountOrderByAggregateInput = {
 
 export type UserAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  labelPrinterDpi?: Prisma.SortOrder
+  labelPrinterWidthMm?: Prisma.SortOrder
+  labelPrinterHeightMm?: Prisma.SortOrder
 }
 
 export type UserMaxOrderByAggregateInput = {
@@ -497,6 +612,11 @@ export type UserMaxOrderByAggregateInput = {
   companyName?: Prisma.SortOrder
   taxId?: Prisma.SortOrder
   phone?: Prisma.SortOrder
+  labelPrinterName?: Prisma.SortOrder
+  labelPrinterFormat?: Prisma.SortOrder
+  labelPrinterDpi?: Prisma.SortOrder
+  labelPrinterWidthMm?: Prisma.SortOrder
+  labelPrinterHeightMm?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
@@ -511,6 +631,11 @@ export type UserMinOrderByAggregateInput = {
   companyName?: Prisma.SortOrder
   taxId?: Prisma.SortOrder
   phone?: Prisma.SortOrder
+  labelPrinterName?: Prisma.SortOrder
+  labelPrinterFormat?: Prisma.SortOrder
+  labelPrinterDpi?: Prisma.SortOrder
+  labelPrinterWidthMm?: Prisma.SortOrder
+  labelPrinterHeightMm?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
@@ -518,6 +643,9 @@ export type UserMinOrderByAggregateInput = {
 
 export type UserSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  labelPrinterDpi?: Prisma.SortOrder
+  labelPrinterWidthMm?: Prisma.SortOrder
+  labelPrinterHeightMm?: Prisma.SortOrder
 }
 
 export type UserScalarRelationFilter = {
@@ -531,6 +659,14 @@ export type StringFieldUpdateOperationsInput = {
 
 export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
+}
+
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type DateTimeFieldUpdateOperationsInput = {
@@ -641,6 +777,11 @@ export type UserCreateWithoutMarketplaceAccountsInput = {
   companyName?: string | null
   taxId?: string | null
   phone?: string | null
+  labelPrinterName?: string | null
+  labelPrinterFormat?: string | null
+  labelPrinterDpi?: number | null
+  labelPrinterWidthMm?: number | null
+  labelPrinterHeightMm?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -660,6 +801,11 @@ export type UserUncheckedCreateWithoutMarketplaceAccountsInput = {
   companyName?: string | null
   taxId?: string | null
   phone?: string | null
+  labelPrinterName?: string | null
+  labelPrinterFormat?: string | null
+  labelPrinterDpi?: number | null
+  labelPrinterWidthMm?: number | null
+  labelPrinterHeightMm?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -694,6 +840,11 @@ export type UserUpdateWithoutMarketplaceAccountsInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterFormat?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterDpi?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterWidthMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterHeightMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -713,6 +864,11 @@ export type UserUncheckedUpdateWithoutMarketplaceAccountsInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterFormat?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterDpi?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterWidthMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterHeightMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -731,6 +887,11 @@ export type UserCreateWithoutOauthStatesInput = {
   companyName?: string | null
   taxId?: string | null
   phone?: string | null
+  labelPrinterName?: string | null
+  labelPrinterFormat?: string | null
+  labelPrinterDpi?: number | null
+  labelPrinterWidthMm?: number | null
+  labelPrinterHeightMm?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -750,6 +911,11 @@ export type UserUncheckedCreateWithoutOauthStatesInput = {
   companyName?: string | null
   taxId?: string | null
   phone?: string | null
+  labelPrinterName?: string | null
+  labelPrinterFormat?: string | null
+  labelPrinterDpi?: number | null
+  labelPrinterWidthMm?: number | null
+  labelPrinterHeightMm?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -784,6 +950,11 @@ export type UserUpdateWithoutOauthStatesInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterFormat?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterDpi?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterWidthMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterHeightMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -803,6 +974,11 @@ export type UserUncheckedUpdateWithoutOauthStatesInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterFormat?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterDpi?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterWidthMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterHeightMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -821,6 +997,11 @@ export type UserCreateWithoutOrdersInput = {
   companyName?: string | null
   taxId?: string | null
   phone?: string | null
+  labelPrinterName?: string | null
+  labelPrinterFormat?: string | null
+  labelPrinterDpi?: number | null
+  labelPrinterWidthMm?: number | null
+  labelPrinterHeightMm?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -840,6 +1021,11 @@ export type UserUncheckedCreateWithoutOrdersInput = {
   companyName?: string | null
   taxId?: string | null
   phone?: string | null
+  labelPrinterName?: string | null
+  labelPrinterFormat?: string | null
+  labelPrinterDpi?: number | null
+  labelPrinterWidthMm?: number | null
+  labelPrinterHeightMm?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -874,6 +1060,11 @@ export type UserUpdateWithoutOrdersInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterFormat?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterDpi?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterWidthMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterHeightMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -893,6 +1084,11 @@ export type UserUncheckedUpdateWithoutOrdersInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterFormat?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterDpi?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterWidthMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterHeightMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -911,6 +1107,11 @@ export type UserCreateWithoutSessionsInput = {
   companyName?: string | null
   taxId?: string | null
   phone?: string | null
+  labelPrinterName?: string | null
+  labelPrinterFormat?: string | null
+  labelPrinterDpi?: number | null
+  labelPrinterWidthMm?: number | null
+  labelPrinterHeightMm?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -930,6 +1131,11 @@ export type UserUncheckedCreateWithoutSessionsInput = {
   companyName?: string | null
   taxId?: string | null
   phone?: string | null
+  labelPrinterName?: string | null
+  labelPrinterFormat?: string | null
+  labelPrinterDpi?: number | null
+  labelPrinterWidthMm?: number | null
+  labelPrinterHeightMm?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -964,6 +1170,11 @@ export type UserUpdateWithoutSessionsInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterFormat?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterDpi?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterWidthMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterHeightMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -983,6 +1194,11 @@ export type UserUncheckedUpdateWithoutSessionsInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterFormat?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterDpi?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterWidthMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterHeightMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1001,6 +1217,11 @@ export type UserCreateWithoutShippingAccountsInput = {
   companyName?: string | null
   taxId?: string | null
   phone?: string | null
+  labelPrinterName?: string | null
+  labelPrinterFormat?: string | null
+  labelPrinterDpi?: number | null
+  labelPrinterWidthMm?: number | null
+  labelPrinterHeightMm?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1020,6 +1241,11 @@ export type UserUncheckedCreateWithoutShippingAccountsInput = {
   companyName?: string | null
   taxId?: string | null
   phone?: string | null
+  labelPrinterName?: string | null
+  labelPrinterFormat?: string | null
+  labelPrinterDpi?: number | null
+  labelPrinterWidthMm?: number | null
+  labelPrinterHeightMm?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1054,6 +1280,11 @@ export type UserUpdateWithoutShippingAccountsInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterFormat?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterDpi?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterWidthMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterHeightMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1073,6 +1304,11 @@ export type UserUncheckedUpdateWithoutShippingAccountsInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterFormat?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterDpi?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterWidthMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterHeightMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1091,6 +1327,11 @@ export type UserCreateWithoutShipmentsInput = {
   companyName?: string | null
   taxId?: string | null
   phone?: string | null
+  labelPrinterName?: string | null
+  labelPrinterFormat?: string | null
+  labelPrinterDpi?: number | null
+  labelPrinterWidthMm?: number | null
+  labelPrinterHeightMm?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1110,6 +1351,11 @@ export type UserUncheckedCreateWithoutShipmentsInput = {
   companyName?: string | null
   taxId?: string | null
   phone?: string | null
+  labelPrinterName?: string | null
+  labelPrinterFormat?: string | null
+  labelPrinterDpi?: number | null
+  labelPrinterWidthMm?: number | null
+  labelPrinterHeightMm?: number | null
   createdAt?: Date | string
   updatedAt?: Date | string
   deletedAt?: Date | string | null
@@ -1144,6 +1390,11 @@ export type UserUpdateWithoutShipmentsInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterFormat?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterDpi?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterWidthMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterHeightMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1163,6 +1414,11 @@ export type UserUncheckedUpdateWithoutShipmentsInput = {
   companyName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterFormat?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  labelPrinterDpi?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterWidthMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  labelPrinterHeightMm?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1258,6 +1514,11 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   companyName?: boolean
   taxId?: boolean
   phone?: boolean
+  labelPrinterName?: boolean
+  labelPrinterFormat?: boolean
+  labelPrinterDpi?: boolean
+  labelPrinterWidthMm?: boolean
+  labelPrinterHeightMm?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   deletedAt?: boolean
@@ -1279,6 +1540,11 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   companyName?: boolean
   taxId?: boolean
   phone?: boolean
+  labelPrinterName?: boolean
+  labelPrinterFormat?: boolean
+  labelPrinterDpi?: boolean
+  labelPrinterWidthMm?: boolean
+  labelPrinterHeightMm?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   deletedAt?: boolean
@@ -1293,6 +1559,11 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   companyName?: boolean
   taxId?: boolean
   phone?: boolean
+  labelPrinterName?: boolean
+  labelPrinterFormat?: boolean
+  labelPrinterDpi?: boolean
+  labelPrinterWidthMm?: boolean
+  labelPrinterHeightMm?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   deletedAt?: boolean
@@ -1307,12 +1578,17 @@ export type UserSelectScalar = {
   companyName?: boolean
   taxId?: boolean
   phone?: boolean
+  labelPrinterName?: boolean
+  labelPrinterFormat?: boolean
+  labelPrinterDpi?: boolean
+  labelPrinterWidthMm?: boolean
+  labelPrinterHeightMm?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   deletedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "passwordHash" | "firstName" | "lastName" | "companyName" | "taxId" | "phone" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "passwordHash" | "firstName" | "lastName" | "companyName" | "taxId" | "phone" | "labelPrinterName" | "labelPrinterFormat" | "labelPrinterDpi" | "labelPrinterWidthMm" | "labelPrinterHeightMm" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   marketplaceAccounts?: boolean | Prisma.User$marketplaceAccountsArgs<ExtArgs>
   oauthStates?: boolean | Prisma.User$oauthStatesArgs<ExtArgs>
@@ -1344,6 +1620,11 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     companyName: string | null
     taxId: string | null
     phone: string | null
+    labelPrinterName: string | null
+    labelPrinterFormat: string | null
+    labelPrinterDpi: number | null
+    labelPrinterWidthMm: number | null
+    labelPrinterHeightMm: number | null
     createdAt: Date
     updatedAt: Date
     deletedAt: Date | null
@@ -1784,6 +2065,11 @@ export interface UserFieldRefs {
   readonly companyName: Prisma.FieldRef<"User", 'String'>
   readonly taxId: Prisma.FieldRef<"User", 'String'>
   readonly phone: Prisma.FieldRef<"User", 'String'>
+  readonly labelPrinterName: Prisma.FieldRef<"User", 'String'>
+  readonly labelPrinterFormat: Prisma.FieldRef<"User", 'String'>
+  readonly labelPrinterDpi: Prisma.FieldRef<"User", 'Int'>
+  readonly labelPrinterWidthMm: Prisma.FieldRef<"User", 'Int'>
+  readonly labelPrinterHeightMm: Prisma.FieldRef<"User", 'Int'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly deletedAt: Prisma.FieldRef<"User", 'DateTime'>

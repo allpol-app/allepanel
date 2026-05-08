@@ -16,5 +16,6 @@ import { AllegroShipmentsService } from './services/allegro-shipments/allegro-sh
     AllegroOrdersService,
     AllegroShipmentsService,
   ],
+  exports: [AllegroShipmentsService],
 })
 export class AllegroModule {}

@@ -11,6 +11,7 @@ import { AllegroAuthService } from '../allegro-auth/allegro-auth.service';
 import {
   Marketplace,
   MarketplaceAccountStatus,
+  OrderStatus,
   ShippingAccountStatus,
   ShippingProvider,
   ShipmentProvider,
@@ -59,6 +60,100 @@ export class AllegroShipmentsService {
     private readonly prisma: PrismaService,
     private readonly allegroAuthService: AllegroAuthService,
   ) {}
+
+  async markOrderReadyForShipment(userId: number, orderId: number) {
+    if (!Number.isInteger(orderId)) {
+      throw new BadRequestException('Niepoprawne orderId.');
+    }
+
+    const order = await this.prisma.order.findFirst({
+      where: {
+        id: orderId,
+        userId,
+        marketplace: Marketplace.ALLEGRO,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        externalOrderId: true,
+        marketplaceAccountId: true,
+        externalRevision: true,
+        externalFulfillmentStatus: true,
+      },
+    });
+
+    if (!order) {
+      return {
+        ok: false,
+        skipped: true,
+        reason: 'To zamówienie nie jest zamówieniem Allegro albo nie należy do użytkownika.',
+      };
+    }
+
+    if (!order.externalOrderId) {
+      return {
+        ok: false,
+        skipped: true,
+        reason: 'Zamówienie nie ma externalOrderId Allegro.',
+      };
+    }
+
+    if (order.externalFulfillmentStatus === 'READY_FOR_SHIPMENT') {
+      return {
+        ok: true,
+        skipped: true,
+        status: 'READY_FOR_SHIPMENT',
+        reason: 'Zamówienie było już w statusie READY_FOR_SHIPMENT.',
+      };
+    }
+
+    const accessToken = await this.getValidAccessTokenForAccount(
+      userId,
+      order.marketplaceAccountId,
+    );
+
+    const params = new URLSearchParams();
+
+    if (order.externalRevision) {
+      params.append('checkoutForm.revision', order.externalRevision);
+    }
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+
+    await axios.put(
+      `${this.allegroApiBaseUrl}/order/checkout-forms/${order.externalOrderId}/fulfillment${query}`,
+      {
+        status: 'READY_FOR_SHIPMENT',
+        shipmentSummary: {
+          lineItemsSent: 'ALL',
+        },
+        provider: {
+          id: 'SELLER',
+        },
+      },
+      {
+        headers: this.getAllegroHeaders(accessToken),
+      },
+    );
+
+    await this.prisma.order.update({
+      where: {
+        id: order.id,
+      },
+      data: {
+        status: OrderStatus.PROCESSING,
+        externalFulfillmentStatus: 'READY_FOR_SHIPMENT',
+        externalLineItemsSentStatus: 'ALL',
+        syncedAt: new Date(),
+      },
+    });
+
+    return {
+      ok: true,
+      status: 'READY_FOR_SHIPMENT',
+      externalOrderId: order.externalOrderId,
+    };
+  }
 
   async getDeliveryServicesForAccount(
     userId: number,
@@ -545,6 +640,20 @@ async createAllegroShipmentCommandForOrder(
       },
     });
 
+    let fulfillmentUpdate: any = null;
+
+    try {
+      fulfillmentUpdate = await this.markOrderReadyForShipment(userId, orderId);
+    } catch (statusError: any) {
+      fulfillmentUpdate = {
+        ok: false,
+        message:
+          statusError?.response?.data ||
+          statusError?.message ||
+          'Nie udało się zmienić statusu Allegro na READY_FOR_SHIPMENT.',
+      };
+    }
+
     return {
       ok: true,
       message:
@@ -561,6 +670,7 @@ async createAllegroShipmentCommandForOrder(
         createdAt: savedShipment.createdAt,
         updatedAt: savedShipment.updatedAt,
       },
+      fulfillmentUpdate,
       raw: response.data,
     };
   } catch (error: any) {

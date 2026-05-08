@@ -904,14 +904,6 @@ export type NullableEnumShipmentParcelSizeFieldUpdateOperationsInput = {
   set?: $Enums.ShipmentParcelSize | null
 }
 
-export type NullableIntFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type ShipmentCreateWithoutUserInput = {
   provider: $Enums.ShipmentProvider
   status?: $Enums.ShipmentStatus

@@ -7,7 +7,9 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InpostShipxService } from '../integrations/inpost/services/inpost-shipx/inpost-shipx.service';
+import { AllegroShipmentsService } from '../integrations/allegro/services/allegro-shipments/allegro-shipments.service';
 import {
+  Marketplace,
   ShipmentParcelSize,
   ShipmentProvider,
   ShipmentStatus,
@@ -25,6 +27,17 @@ type PrepareInpostShipmentBody = {
   labelFormat?: string;
 };
 
+type CreateShipmentBody = PrepareInpostShipmentBody & {
+  mode?: string;
+  deliveryMethodId?: string;
+  credentialsId?: string;
+  description?: string;
+  reference?: string;
+  insuranceAmount?: number;
+  codAmount?: number;
+  returnLabel?: boolean;
+};
+
 type InpostParcelSize = 'A' | 'B' | 'C';
 
 type ParcelDimensions = {
@@ -32,6 +45,13 @@ type ParcelDimensions = {
   widthCm: number;
   heightCm: number;
 };
+
+type ShipmentOptionsTabKey =
+  | 'ALLEGRO'
+  | 'INPOST_COURIER'
+  | 'INPOST_LOCKER'
+  | 'TEMU_SHIPPING'
+  | 'OTHER';
 
 const INPOST_PARCEL_LIMITS: Record<InpostParcelSize, ParcelDimensions> = {
   A: {
@@ -54,9 +74,377 @@ const INPOST_PARCEL_LIMITS: Record<InpostParcelSize, ParcelDimensions> = {
 @Injectable()
 export class ShipmentsService {
   constructor(
-  private readonly prisma: PrismaService,
-  private readonly inpostShipxService: InpostShipxService,
-) {}
+    private readonly prisma: PrismaService,
+    private readonly inpostShipxService: InpostShipxService,
+    private readonly allegroShipmentsService: AllegroShipmentsService,
+  ) {}
+
+  // GET /shipments/orders/:orderId/options
+  // Bezpieczny endpoint dla frontendu. Niczego nie tworzy w Allegro ani InPost.
+  async getShipmentOptionsForOrder(userId: number, orderId: number) {
+    if (!Number.isInteger(orderId)) {
+      throw new BadRequestException('Niepoprawne orderId.');
+    }
+
+    const order = await this.prisma.order.findFirst({
+      where: {
+        id: orderId,
+        userId,
+        deletedAt: null,
+      },
+      include: {
+        marketplaceAccount: {
+          select: {
+            id: true,
+            accountName: true,
+            marketplace: true,
+            externalAccountId: true,
+            status: true,
+          },
+        },
+        items: {
+          orderBy: {
+            id: 'asc',
+          },
+        },
+        shipments: {
+          where: {
+            deletedAt: null,
+          },
+          orderBy: {
+            id: 'desc',
+          },
+          select: {
+            id: true,
+            provider: true,
+            status: true,
+            externalShipmentId: true,
+            externalCommandId: true,
+            trackingNumber: true,
+            labelFormat: true,
+            errorMessage: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException(
+        'Nie znaleziono zamówienia albo zamówienie nie należy do tego użytkownika.',
+      );
+    }
+
+    const warnings: string[] = [];
+
+    const inpostAccounts = await this.prisma.shippingAccount.findMany({
+      where: {
+        userId,
+        provider: ShippingProvider.INPOST_SHIPX,
+        status: ShippingAccountStatus.ACTIVE,
+        deletedAt: null,
+      },
+      orderBy: {
+        id: 'desc',
+      },
+      select: {
+        id: true,
+        provider: true,
+        accountName: true,
+        organizationId: true,
+        organizationName: true,
+        organizationEmail: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    let allegroServices: any[] = [];
+    let allegroServiceMatch: any = null;
+
+    const canCheckAllegro =
+      order.marketplace === Marketplace.ALLEGRO &&
+      Number.isInteger(order.marketplaceAccountId);
+
+    if (canCheckAllegro) {
+      try {
+        const deliveryServices =
+          await this.allegroShipmentsService.getDeliveryServicesForAccount(
+            userId,
+            order.marketplaceAccountId,
+          );
+
+        allegroServices = deliveryServices.services ?? [];
+      } catch (error: any) {
+        warnings.push(
+          `Nie udało się pobrać usług Wysyłam z Allegro: ${this.extractErrorMessage(error)}`,
+        );
+      }
+
+      try {
+        allegroServiceMatch =
+          await this.allegroShipmentsService.findDeliveryServiceForOrder(
+            userId,
+            order.id,
+          );
+      } catch (error: any) {
+        warnings.push(
+          `Nie udało się automatycznie dopasować usługi Allegro: ${this.extractErrorMessage(error)}`,
+        );
+      }
+    }
+
+    if (inpostAccounts.length === 0) {
+      warnings.push('Brak aktywnego konta InPost ShipX.');
+    }
+
+    if (canCheckAllegro && allegroServices.length === 0) {
+      warnings.push('Brak dostępnych usług Wysyłam z Allegro dla tego konta.');
+    }
+
+    const defaultTab = this.detectDefaultShipmentTab(
+      order,
+      inpostAccounts.length,
+      allegroServices.length,
+      allegroServiceMatch,
+    );
+
+    const defaultDescription = this.buildContentsDescription(order.items);
+    const defaultReference = order.externalOrderId || String(order.id);
+    const defaultInsuranceAmount = this.toNumberOrNull(
+      order.totalToPay ?? order.paymentAmount ?? order.totalAmount,
+    );
+
+    const defaultAllegroService =
+      allegroServiceMatch?.allegroShipmentManagement?.selected ?? null;
+
+    return {
+      ok: true,
+      mode: 'options_only',
+      message:
+        'Endpoint zwraca opcje formularza przesyłki. Nie tworzy żadnej przesyłki.',
+      defaultTab,
+      order: {
+        id: order.id,
+        externalOrderId: order.externalOrderId,
+        marketplace: order.marketplace,
+        marketplaceAccountId: order.marketplaceAccountId,
+        marketplaceAccountName: order.marketplaceAccount?.accountName ?? null,
+        status: order.status,
+        externalOrderStatus: order.externalOrderStatus,
+        externalFulfillmentStatus: order.externalFulfillmentStatus,
+        deliveryMethodId: order.deliveryMethodId,
+        deliveryMethodName: order.deliveryMethodName,
+        pickupPointId: order.pickupPointId,
+        pickupPointName: order.pickupPointName,
+        totalAmount: order.totalAmount,
+        totalToPay: order.totalToPay,
+        currency: order.currency,
+        paymentAmount: order.paymentAmount,
+        paymentCurrency: order.paymentCurrency,
+        invoiceRequired: order.invoiceRequired,
+        orderCreatedAt: order.orderCreatedAt,
+      },
+      receiver: {
+        name: this.buildReceiverName(order),
+        companyName: order.buyerCompanyName,
+        email: order.buyerEmail,
+        phone: this.normalizePhone(order.deliveryPhone || order.buyerPhone),
+        street: order.deliveryStreet,
+        city: order.deliveryCity,
+        zipCode: order.deliveryZipCode,
+        countryCode: order.deliveryCountryCode,
+        pickupPointId: order.pickupPointId,
+        pickupPointName: order.pickupPointName,
+      },
+      items: order.items.map((item) => ({
+        id: item.id,
+        productName: item.productName,
+        productImageUrl: item.productImageUrl,
+        quantity: item.quantity,
+        price: item.price,
+        currency: item.currency,
+        externalOfferId: item.externalOfferId,
+      })),
+      existingShipments: order.shipments,
+      tabs: this.buildShipmentTabs({
+        defaultTab,
+        canCheckAllegro,
+        allegroServicesCount: allegroServices.length,
+        inpostAccountsCount: inpostAccounts.length,
+      }),
+      defaults: {
+        account: {
+          allegroMarketplaceAccountId: order.marketplaceAccountId ?? null,
+          inpostShippingAccountId: inpostAccounts[0]?.id ?? null,
+        },
+        package: {
+          parcelSize: this.getDefaultInpostParcelSize(order.deliveryMethodName),
+          weightKg: null,
+          lengthCm: null,
+          widthCm: null,
+          heightCm: null,
+          labelFormat: 'PDF',
+          description: defaultDescription,
+          reference: defaultReference,
+          insuranceAmount: defaultInsuranceAmount,
+          codAmount: null,
+          returnLabel: false,
+        },
+        allegro: {
+          selectedDeliveryMethodId:
+            defaultAllegroService?.deliveryMethodId || order.deliveryMethodId || null,
+          selectedCredentialsId: defaultAllegroService?.credentialsId || null,
+        },
+      },
+      providers: {
+        allegro: {
+          available: canCheckAllegro && allegroServices.length > 0,
+          marketplaceAccountId: order.marketplaceAccountId,
+          marketplaceAccountName: order.marketplaceAccount?.accountName ?? null,
+          serviceMatch: allegroServiceMatch,
+          services: allegroServices,
+        },
+        inpostShipx: {
+          available: inpostAccounts.length > 0,
+          accounts: inpostAccounts,
+          parcelLimits: INPOST_PARCEL_LIMITS,
+        },
+        temuShipping: {
+          available: false,
+          message: 'Temu Shipping jest placeholderem pod przyszłą integrację.',
+        },
+        other: {
+          available: true,
+          message:
+            'Sekcja Inne może później obsłużyć ręczne lub niestandardowe metody nadania.',
+        },
+      },
+      requirements: {
+        ALLEGRO: {
+          requiredFields: [
+            'deliveryMethodId',
+            'weightKg',
+            'lengthCm',
+            'widthCm',
+            'heightCm',
+            'description',
+            'reference',
+          ],
+        },
+        INPOST_COURIER: {
+          requiredFields: [
+            'shippingAccountId',
+            'weightKg',
+            'lengthCm',
+            'widthCm',
+            'heightCm',
+            'description',
+            'reference',
+          ],
+        },
+        INPOST_LOCKER: {
+          requiredFields: [
+            'shippingAccountId',
+            'parcelSize',
+            'weightKg',
+            'lengthCm',
+            'widthCm',
+            'heightCm',
+            'description',
+            'reference',
+            'targetPoint',
+          ],
+        },
+      },
+      warnings,
+    };
+  }
+
+   // POST /shipments/orders/:orderId/create
+  // Wspólny endpoint do REALNEGO nadawania paczki.
+  // Uwaga: ten endpoint może utworzyć prawdziwą przesyłkę u operatora.
+  async createShipmentForOrder(
+    userId: number,
+    orderId: number,
+    body: CreateShipmentBody,
+  ) {
+    if (!Number.isInteger(orderId)) {
+      throw new BadRequestException('Niepoprawne orderId.');
+    }
+
+    const mode = String(body.mode || '').trim().toUpperCase();
+
+    if (!mode) {
+      throw new BadRequestException('Wybierz sposób nadania przesyłki.');
+    }
+
+    if (mode === 'TEMU_SHIPPING') {
+      throw new BadRequestException(
+        'Temu Shipping nie jest jeszcze obsługiwane w tym projekcie.',
+      );
+    }
+
+    if (mode === 'OTHER') {
+      throw new BadRequestException(
+        'Nadawanie przez sekcję Inne nie jest jeszcze obsługiwane.',
+      );
+    }
+
+    if (
+      mode === 'INPOST' ||
+      mode === 'INPOST_SHIPX' ||
+      mode === 'INPOST_LOCKER' ||
+      mode === 'INPOST_COURIER'
+    ) {
+      const result = await this.createInpostShipmentForOrder(userId, orderId, {
+        shippingAccountId: body.shippingAccountId,
+        parcelSize: body.parcelSize || 'B',
+        weightKg: body.weightKg,
+        lengthCm: body.lengthCm,
+        widthCm: body.widthCm,
+        heightCm: body.heightCm,
+        labelFormat: body.labelFormat || 'pdf',
+      });
+
+      return {
+        ...result,
+        unifiedEndpoint: true,
+        selectedMode: mode,
+        provider: ShipmentProvider.INPOST_SHIPX,
+        nextStep:
+          'Jeśli przesyłka została utworzona, możesz pobrać etykietę przez GET /shipments/:shipmentId/label?format=pdf.',
+      };
+    }
+
+    if (mode === 'ALLEGRO' || mode === 'ALLEGRO_SHIPMENT_MANAGEMENT') {
+      const result =
+        await this.allegroShipmentsService.createAllegroShipmentCommandForOrder(
+          userId,
+          orderId,
+          {
+            weightKg: body.weightKg,
+            lengthCm: body.lengthCm,
+            widthCm: body.widthCm,
+            heightCm: body.heightCm,
+            labelFormat: body.labelFormat || 'PDF',
+          },
+        );
+
+      return {
+        ...result,
+        unifiedEndpoint: true,
+        selectedMode: mode,
+        provider: ShipmentProvider.ALLEGRO_SHIPMENT_MANAGEMENT,
+        nextStep:
+          'Allegro tworzy komendę nadania. Następnie sprawdź status przez GET /integrations/allegro/shipments/:shipmentId/command. Po otrzymaniu externalShipmentId możesz pobrać etykietę.',
+      };
+    }
+
+    throw new BadRequestException(`Nieobsługiwany sposób nadania: ${mode}`);
+  }
 
   async prepareInpostShipmentForOrder(
     userId: number,
@@ -469,7 +857,7 @@ export class ShipmentsService {
     return map[parcelSize];
   }
 
-    // POST /shipments/orders/:orderId/create-inpost
+  // POST /shipments/orders/:orderId/create-inpost
   // Służy do REALNEGO nadania przesyłki przez InPost ShipX.
   // Tego endpointu nie odpalaj testowo, jeśli nie chcesz utworzyć paczki.
   async createInpostShipmentForOrder(
@@ -485,7 +873,8 @@ export class ShipmentsService {
 
     if (!prepared.ok) {
       throw new BadRequestException({
-        message: 'Nie można nadać przesyłki. Dane paczki lub zamówienia są niepoprawne.',
+        message:
+          'Nie można nadać przesyłki. Dane paczki lub zamówienia są niepoprawne.',
         missing: prepared.missing,
         fieldErrors: prepared.fieldErrors,
       });
@@ -574,6 +963,23 @@ export class ShipmentsService {
         },
       });
 
+      let fulfillmentUpdate: any = null;
+
+      try {
+        fulfillmentUpdate = await this.allegroShipmentsService.markOrderReadyForShipment(
+          userId,
+          orderId,
+        );
+      } catch (statusError: any) {
+        fulfillmentUpdate = {
+          ok: false,
+          message:
+            statusError?.response?.data ||
+            statusError?.message ||
+            'Nie udało się zmienić statusu Allegro na READY_FOR_SHIPMENT.',
+        };
+      }
+
       return {
         ok: true,
         message: 'Przesyłka InPost została utworzona.',
@@ -588,6 +994,7 @@ export class ShipmentsService {
           createdAt: savedShipment.createdAt,
           updatedAt: savedShipment.updatedAt,
         },
+        fulfillmentUpdate,
       };
     } catch (error: any) {
       const errorDetails = error.response?.data || {
@@ -716,7 +1123,7 @@ export class ShipmentsService {
     return {
       buffer: labelBuffer,
       contentType: this.getLabelContentType(normalizedFormat),
-      filename: `inpost-label-${shipment.id}.${normalizedFormat}`,
+      filename: `inpost-label-${shipment.id}.${this.getLabelExtension(normalizedFormat)}`,
     };
   }
 
@@ -765,19 +1172,179 @@ export class ShipmentsService {
     return value ? String(value) : null;
   }
 
-  private getLabelContentType(format: string) {
-    if (format === 'zpl') {
-      return 'application/x-zpl';
+   private getLabelContentType(format: string) {
+    const normalized = String(format || '').toLowerCase().trim();
+
+    if (normalized === 'zpl') {
+      return 'text/plain; charset=utf-8';
     }
 
-    if (format === 'epl') {
-      return 'application/octet-stream';
+    if (normalized === 'epl' || normalized === 'epl2') {
+      return 'text/plain; charset=utf-8';
     }
 
     return 'application/pdf';
   }
 
+  private getLabelExtension(format: string) {
+    const normalized = String(format || '').toLowerCase().trim();
+
+    if (normalized === 'zpl') {
+      return 'zpl';
+    }
+
+    if (normalized === 'epl' || normalized === 'epl2') {
+      return 'epl';
+    }
+
+    return 'pdf';
+  }
+
   private toJsonSafe(value: unknown) {
     return JSON.parse(JSON.stringify(value));
+  }
+
+  private buildShipmentTabs(input: {
+    defaultTab: ShipmentOptionsTabKey;
+    canCheckAllegro: boolean;
+    allegroServicesCount: number;
+    inpostAccountsCount: number;
+  }) {
+    return [
+      {
+        key: 'ALLEGRO',
+        label: 'Allegro.pl',
+        enabled: input.canCheckAllegro && input.allegroServicesCount > 0,
+        recommended: input.defaultTab === 'ALLEGRO',
+        reason:
+          input.canCheckAllegro && input.allegroServicesCount > 0
+            ? null
+            : 'Brak dostępnych usług Wysyłam z Allegro.',
+      },
+      {
+        key: 'INPOST_COURIER',
+        label: 'InPost Kurier',
+        enabled: input.inpostAccountsCount > 0,
+        recommended: input.defaultTab === 'INPOST_COURIER',
+        reason:
+          input.inpostAccountsCount > 0
+            ? null
+            : 'Brak aktywnego konta InPost ShipX.',
+      },
+      {
+        key: 'INPOST_LOCKER',
+        label: 'InPost Paczkomaty',
+        enabled: input.inpostAccountsCount > 0,
+        recommended: input.defaultTab === 'INPOST_LOCKER',
+        reason:
+          input.inpostAccountsCount > 0
+            ? null
+            : 'Brak aktywnego konta InPost ShipX.',
+      },
+      {
+        key: 'TEMU_SHIPPING',
+        label: 'Temu Shipping',
+        enabled: false,
+        recommended: input.defaultTab === 'TEMU_SHIPPING',
+        reason: 'Integracja będzie dodana później.',
+      },
+      {
+        key: 'OTHER',
+        label: 'Inne',
+        enabled: true,
+        recommended: input.defaultTab === 'OTHER',
+        reason: null,
+      },
+    ];
+  }
+
+  private detectDefaultShipmentTab(
+    order: {
+      deliveryMethodName?: string | null;
+      pickupPointId?: string | null;
+    },
+    inpostAccountsCount: number,
+    allegroServicesCount: number,
+    allegroServiceMatch: any,
+  ): ShipmentOptionsTabKey {
+    if (
+      allegroServiceMatch?.recommendedProvider ===
+        'ALLEGRO_SHIPMENT_MANAGEMENT' &&
+      allegroServicesCount > 0
+    ) {
+      return 'ALLEGRO';
+    }
+
+    if (allegroServiceMatch?.recommendedProvider === 'INPOST_SHIPX') {
+      return this.isLockerDelivery(order) ? 'INPOST_LOCKER' : 'INPOST_COURIER';
+    }
+
+    if (this.isInpostDeliveryMethod(order.deliveryMethodName)) {
+      return this.isLockerDelivery(order) ? 'INPOST_LOCKER' : 'INPOST_COURIER';
+    }
+
+    if (allegroServicesCount > 0) {
+      return 'ALLEGRO';
+    }
+
+    if (inpostAccountsCount > 0) {
+      return 'INPOST_COURIER';
+    }
+
+    return 'OTHER';
+  }
+
+  private getDefaultInpostParcelSize(deliveryMethodName?: string | null) {
+    const name = String(deliveryMethodName || '').toLowerCase();
+
+    if (name.includes('gabaryt a')) return 'A';
+    if (name.includes('gabaryt b')) return 'B';
+    if (name.includes('gabaryt c')) return 'C';
+
+    return 'B';
+  }
+
+  private buildContentsDescription(items: { productName?: string | null }[]) {
+    const description = items
+      .map((item) => item.productName)
+      .filter(Boolean)
+      .join(', ')
+      .trim();
+
+    return description.slice(0, 100) || 'Towar ze sprzedaży internetowej';
+  }
+
+  private toNumberOrNull(value: unknown) {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    const numberValue = Number(value);
+
+    return Number.isFinite(numberValue) ? numberValue : null;
+  }
+
+  private extractErrorMessage(error: any) {
+    const responseData = error?.response?.data;
+
+    if (typeof responseData === 'string') {
+      return responseData;
+    }
+
+    if (responseData?.message) {
+      return Array.isArray(responseData.message)
+        ? responseData.message.join(', ')
+        : String(responseData.message);
+    }
+
+    if (responseData?.errors) {
+      try {
+        return JSON.stringify(responseData.errors);
+      } catch {
+        return 'Błąd API zewnętrznego.';
+      }
+    }
+
+    return error?.message || 'Nieznany błąd.';
   }
 }

@@ -86,6 +86,11 @@ export const UserScalarFieldEnum = {
   companyName: 'companyName',
   taxId: 'taxId',
   phone: 'phone',
+  labelPrinterName: 'labelPrinterName',
+  labelPrinterFormat: 'labelPrinterFormat',
+  labelPrinterDpi: 'labelPrinterDpi',
+  labelPrinterWidthMm: 'labelPrinterWidthMm',
+  labelPrinterHeightMm: 'labelPrinterHeightMm',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   deletedAt: 'deletedAt'

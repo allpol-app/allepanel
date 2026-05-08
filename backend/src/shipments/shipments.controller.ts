@@ -18,6 +18,57 @@ import { ShipmentsService } from './shipments.service';
 export class ShipmentsController {
   constructor(private readonly shipmentsService: ShipmentsService) {}
 
+  // GET /shipments/orders/:orderId/options
+  // Bezpieczny endpoint dla frontendu.
+  // Niczego nie nadaje — tylko zwraca dane potrzebne do formularza przesyłki.
+  @Get('orders/:orderId/options')
+  async getShipmentOptions(
+    @Req() req: Request,
+    @Param('orderId') orderId: string,
+  ) {
+    const user = (req as any).user;
+
+    return this.shipmentsService.getShipmentOptionsForOrder(
+      user.id,
+      Number(orderId),
+    );
+  }
+
+  // POST /shipments/orders/:orderId/create
+  // WSPÓLNY endpoint do REALNEGO nadawania paczki.
+  // Używa mode z body, np. ALLEGRO, INPOST_LOCKER, INPOST_COURIER.
+  @Post('orders/:orderId/create')
+  async createShipment(
+    @Req() req: Request,
+    @Param('orderId') orderId: string,
+    @Body()
+    body: {
+      mode?: string;
+      shippingAccountId?: number;
+      parcelSize?: string;
+      weightKg?: number;
+      lengthCm?: number;
+      widthCm?: number;
+      heightCm?: number;
+      labelFormat?: string;
+      deliveryMethodId?: string;
+      credentialsId?: string;
+      description?: string;
+      reference?: string;
+      insuranceAmount?: number;
+      codAmount?: number;
+      returnLabel?: boolean;
+    },
+  ) {
+    const user = (req as any).user;
+
+    return this.shipmentsService.createShipmentForOrder(
+      user.id,
+      Number(orderId),
+      body,
+    );
+  }
+
   @Post('orders/:orderId/prepare-inpost')
   async prepareInpostShipment(
     @Req() req: Request,
@@ -43,7 +94,7 @@ export class ShipmentsController {
   }
 
   // POST /shipments/orders/:orderId/create-inpost
-  // Służy do REALNEGO nadania przesyłki przez InPost ShipX.
+  // Starszy endpoint — nadal działa, ale nowy frontend będzie używał /create.
   @Post('orders/:orderId/create-inpost')
   async createInpostShipment(
     @Req() req: Request,
@@ -69,7 +120,7 @@ export class ShipmentsController {
   }
 
   // GET /shipments/:shipmentId/label?format=pdf
-  // Służy do pobrania etykiety przesyłki InPost ShipX.
+  // Pobiera etykietę przesyłki InPost ShipX.
   @Get(':shipmentId/label')
   async getInpostShipmentLabel(
     @Req() req: Request,
