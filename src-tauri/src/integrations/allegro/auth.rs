@@ -20,11 +20,28 @@ pub struct AllegroTokenResponse {
     pub refresh_token: String,
 }
 
+//profil allegro
+#[derive(Deserialize)]
+pub struct AllegroBaseMarketplace {
+    pub id: String,
+}
+
+#[derive(Deserialize)]
+pub struct AllegroCompany {
+    pub name: String,
+    #[serde(rename = "taxId")]  // JSON ma camelCase, Rust ma snake_case - serde tłumaczy
+    pub tax_id: String,
+}
+
 #[derive(Deserialize)]
 pub struct AllegroProfile {
     pub id: String,
     pub login: String,
     pub email: Option<String>,
+    #[serde(rename = "baseMarketplace")]
+    pub base_marketplace: Option<AllegroBaseMarketplace>,
+    pub company: Option<AllegroCompany>,
+    pub features: Option<Vec<String>>,  // Vec<String> = tablica stringów, odpowiednik string[] w TS
 }
 
 impl AllegroAuthService {
@@ -39,7 +56,7 @@ impl AllegroAuthService {
     //generowanie verifier i sha256 verifier
     pub fn generate_code_verifier() -> String {
         let mut verifier = [0u8; 80];
-        getrandom::getrandom(&mut bytes).expect("Nie udalo sie wygenerowac code verifier");
+        getrandom::getrandom(&mut verifier).expect("Nie udalo sie wygenerowac code verifier");
         URL_SAFE_NO_PAD.encode(verifier)
     }
 
@@ -112,7 +129,7 @@ impl AllegroAuthService {
                 self.config.allegro_client_id,
                 self.config.allegro_client_secret
             );
-            base64::engine::general_purpose::STANDARD.encode(raw);
+            base64::engine::general_purpose::STANDARD.encode(raw)
         };
 
         let body = format!(

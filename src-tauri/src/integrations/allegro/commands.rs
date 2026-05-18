@@ -14,7 +14,7 @@ fn get_code_from_request(request_line: &str) -> Result<String,String> {
     let after_code = &request_line[code_start +5..];
 
     let code_end = after_code
-        .find[|c| c == '&'| c == ' ']
+        .find(|c| c == '&'|| c == ' ')
         .unwrap_or(after_code.len());
 
     let code = &after_code[..code_end];
@@ -48,7 +48,7 @@ async fn wait_for_allegro_callback() -> Result<String, String> {
     reader
         .read_line(&mut first_line) //czyta i odrazu wydajnie napelnia nowy pusty string
         .await
-        .map_err(|e| format!("Błąd przy czytaniu requestu", e))?;
+        .map_err(|e| format!("Błąd przy czytaniu requestu: {}", e))?;
 
     //wyciaga tylko code z requestu(funckja wyzej)
     let code = get_code_from_request(&first_line)?;
@@ -64,7 +64,7 @@ async fn wait_for_allegro_callback() -> Result<String, String> {
         "</body></html>"
     );
 
-    let _ = reader.get_mut().write_all(html_response.as_bytes());
+    let _ = reader.get_mut().write_all(html_response.as_bytes()).await;
 
     Ok(code)
 }
@@ -72,11 +72,11 @@ async fn wait_for_allegro_callback() -> Result<String, String> {
 #[tauri::command]
 pub async fn start_allegro_auth(app: AppHandle) -> Result<String, String> {
     let config = AppConfig::from_env();
-    let service = AllegroAuthService::new();
+    let service = AllegroAuthService::new(config);
 
     let code_verifier = AllegroAuthService::generate_code_verifier();
 
-    let auth_url = service.generate_auth_url(code_verifier);
+    let auth_url = service.generate_auth_url(&code_verifier);
 
     tauri::opener::open_url(&app, &auth_url, None)
         .map_err(|e| format!("Nie udało sie otworzyc przeglądarki, {}", e))?;
