@@ -3,13 +3,13 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::config::Config;
+use crate::config::AppConfig;
 
 const ALLEGRO_AUTH_URL: &str = "https://allegro.pl/auth/oauth/authorize";
 const ALLEGRO_TOKEN_URL: &str = "https://allegro.pl/auth/oauth/token";
 
 pub struct AllegroAuthService {
-    config: Config,
+    config: AppConfig,
     http_client: Client,
 }
 
@@ -21,12 +21,11 @@ pub struct AllegroTokenResponse {
 }
 
 //profil allegro
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct AllegroBaseMarketplace {
     pub id: String,
 }
-
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 pub struct AllegroCompany {
     pub name: String,
     #[serde(rename = "taxId")]  // JSON ma camelCase, Rust ma snake_case - serde tłumaczy
@@ -38,6 +37,10 @@ pub struct AllegroProfile {
     pub id: String,
     pub login: String,
     pub email: Option<String>,
+    #[serde(rename = "firstName")]
+    pub first_name: Option<String>,
+    #[serde(rename = "lastName")]
+    pub last_name: Option<String>,
     #[serde(rename = "baseMarketplace")]
     pub base_marketplace: Option<AllegroBaseMarketplace>,
     pub company: Option<AllegroCompany>,

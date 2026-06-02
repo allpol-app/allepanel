@@ -1,53 +1,30 @@
-use rusqlite::{Connection, Result};
-use std::sync::Mutex;
-use tauri::State;
-
-struct DbState(Mutex<Connection>);
-
-#[tauri::command]
-fn save_token(state: State<DbState>, token: String) -> Result<(), String> {
-    let conn = state.0.lock().map_err(|e| e.to_string())?;
-    conn.execute(
-        "INSERT OR REPLACE INTO settings (key, value) VALUES (?1, ?2)",
-        ("allegro_token", &token),
-    )
-    .map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-fn get_token(state: State<DbState>) -> Result<String, String> {
-    let conn = state.0.lock().map_err(|e| e.to_string())?;
-    let result = conn.query_row(
-        "SELECT value FROM settings WHERE key = ?1",
-        ["allegro_token"],
-        |row| row.get(0),
-    );
-    match result {
-        Ok(val) => Ok(val),
-        Err(_) => Ok(String::new()),
+mod config;
+mod db;
+mod integrations {
+    pub mod allegro {
+        pub mod auth;
+        pub mod commands;
+        pub mod orders_true;
     }
 }
 
-fn init_db(conn: &Connection) {
-    conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS settings (
-            key   TEXT PRIMARY KEY,
-            value TEXT NOT NULL
-        );",
-    )
-    .expect("failed to init db");
-}
+use db::Database;
+use integrations::allegro::commands::{start_allegro_auth, refresh_allegro_token, get_allegro_accounts, sync_allegro_orders};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let conn = Connection::open("propacker.db").expect("failed to open db");
-    init_db(&conn);
+    let db = Database::init("propacker.db")
+        .expect("Nie udało się zainicjalizować bazy danych");
 
     tauri::Builder::default()
-        .manage(DbState(Mutex::new(conn)))
+        .manage(db)
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![save_token, get_token])
+        .invoke_handler(tauri::generate_handler![
+            start_allegro_auth,
+            refresh_allegro_token,
+            get_allegro_accounts,
+            sync_allegro_orders,
+        ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("Błąd podczas uruchamiania aplikacji");
 }
